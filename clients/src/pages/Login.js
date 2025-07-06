@@ -1,80 +1,90 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../services/api";
 
-const Login = () => {
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+function Login() {
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      const res = await API.post("/auth/login", form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      navigate("/upload"); // go to upload page
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Save token in localStorage
+        localStorage.setItem("token", data.token);
+        alert("Login successful!");
+        navigate("/dashboard"); // or wherever your dashboard route is
+      } else {
+        setError(data.message || "Login failed");
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError("Server error. Please try again later.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center px-4">
-      <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-400 to-indigo-500 px-4">
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-700">Login</h2>
 
         {error && (
-          <p className="text-center text-red-500 text-sm mb-4">{error}</p>
+          <div className="mb-4 text-red-600 text-sm bg-red-100 p-2 rounded border border-red-300">
+            {error}
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 rounded-md border shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
+        <input
+          name="email"
+          type="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          className="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        />
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          className="w-full mb-6 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        />
+        <button
+          type="submit"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-md font-semibold transition duration-200"
+        >
+          Login
+        </button>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 rounded-md border shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-
-          <button
-            type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition duration-200 shadow"
-          >
-            Login
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
+        <p className="mt-4 text-sm text-center text-gray-600">
+          Don’t have an account?{" "}
           <span
-            className="text-indigo-600 hover:underline cursor-pointer"
+            className="text-blue-600 hover:underline cursor-pointer"
             onClick={() => navigate("/register")}
           >
-            Register now
+            Register
           </span>
         </p>
-      </div>
+      </form>
     </div>
   );
-};
+}
 
 export default Login;
+

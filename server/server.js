@@ -1,22 +1,20 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const dotenv = require("dotenv").config();
 const connectDB = require("./config/db");
 
 const app = express();
-
-// 🧠 MIDDLEWARE – These must come FIRST
-app.use(cors());
-app.use(express.json()); // Parses application/json
-app.use(express.urlencoded({ extended: true })); // Parses form-urlencoded
-
-// 🧠 ROUTES – These come AFTER middleware
-app.use("/api", require("./routes"));
-
 connectDB();
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+app.use("/uploads", express.static("uploads"));
+
+// ✅ Only include this once
+app.use("/api/upload", require("./routes/uploadRoutes"));
+app.use("/api/excel", require("./routes/excelRoutes"));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

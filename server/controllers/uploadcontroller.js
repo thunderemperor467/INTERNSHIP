@@ -1,28 +1,27 @@
-const XLSX = require("xlsx");
-const UploadData = require("../models/uploaddata.js");
+// server/controllers/uploadController.js
+const xlsx = require("xlsx");
+const ExcelFile = require("../models/ExcelFile");
+const UploadData = require("../models/uploaddata");
 
-const handleExcelUpload = async (req, res) => {
+exports.uploadExcel = async (req, res) => {
   try {
-    const workbook = XLSX.readFile(req.file.path);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const file = req.file;
+    if (!file) return res.status(400).json({ msg: "No file uploaded" });
 
-    const upload = new UploadData({
-      uploadedBy: req.user.id,
-      filename: req.file.originalname,
-      rows: data,
+    const workbook = xlsx.readFile(file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const savedFile = await ExcelFile.create({
+      filename: file.filename,
+      originalname: file.originalname,
     });
 
-    await upload.save();
+    const entries = data.map((item) => ({ data: item, fileId: savedFile._id }));
+    await UploadData.insertMany(entries);
 
-    res.status(201).json({
-      message: "File uploaded and saved successfully",
-      totalRows: data.length,
-      uploadId: upload._id
-    });
+    res.json({ msg: "File uploaded successfully", rowCount: data.length });
   } catch (err) {
-    res.status(500).json({ message: "Failed to process file", error: err.message });
+    res.status(500).json({ msg: "Failed to parse Excel", error: err.message });
   }
 };
-
-module.exports = { handleExcelUpload };
